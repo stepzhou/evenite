@@ -164,8 +164,8 @@ class FBMenu(object):
         """
         friends = self.auth.graph.request(
             self.API_request(self.friendlist_list[list_id], 'members'))['data']
-        for friend in friends:
-            print "\t" + friend['name']
+        for f in friends:
+            print "\t" + f['name']
 
     def invite(self, event_index, list_index):
         """
