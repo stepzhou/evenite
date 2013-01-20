@@ -116,6 +116,9 @@ class FBMenu(object):
 
         self.PROMPT = self.auth.username + "> "
 
+    def API_request(self, *args):
+        return "/".join(args)
+
     def show_events(self):
         """
         Displays recent events that includes you as the owner.
@@ -125,7 +128,8 @@ class FBMenu(object):
         # Reset event history
         self.event_list = []
         event_num = 0
-        events = self.auth.graph.request('/me/events/')['data']
+        events = self.auth.graph.request(
+            self.API_request('me', 'events'))['data']
         for event in events:
             print_title(chr(ord('A') + event_num), event['name'])
             print_param("Start time", 'start_time', event)
@@ -143,10 +147,11 @@ class FBMenu(object):
         # Reset friendlist history
         self.friendlist_list = []
         friendlist_num = 0
-        friendlists = self.auth.graph.request('/me/friendlists/')['data']
+        friendlists = self.auth.graph.request(
+            self.API_request('me', 'friendlists'))['data']
         for f in friendlists:
-            friend_count = len(self.auth.graph.request('{}/{}'.format(
-                    f['id'], 'members'))['data'])
+            friend_count = len(self.auth.graph.request(
+                self.API_request(f['id'], 'members'))['data'])
             print_title(friendlist_num, f['name'] + " - " + str(friend_count))
 
             # Build friendlist history
@@ -157,8 +162,8 @@ class FBMenu(object):
         """
         Displays all the people within a certain friend list
         """
-        friends = self.auth.graph.request('/{}/{}/'.format(
-                self.friendlist_list[list_id], 'members'))['data']
+        friends = self.auth.graph.request(
+            self.API_request(self.friendlist_list[list_id], 'members'))['data']
         for friend in friends:
             print "\t" + friend['name']
 
@@ -171,8 +176,8 @@ class FBMenu(object):
         friendlist_id = self.friendlist_list[list_index]
         event_id = self.event_list[event_index]
 
-        friends = self.auth.graph.request('/{}/{}/'.format(
-            friendlist_id, 'members'))['data']
+        friends = self.auth.graph.request(
+            self.API_request(friendlist_id, 'members'))['data']
 
         friend_ids = []
         for f in friends:
