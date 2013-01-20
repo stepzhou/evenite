@@ -1,0 +1,5 @@
+env/
+fb-cl-ex.py
+settings.py
+.fb_access_token
+*.pyc
