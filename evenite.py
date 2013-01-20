@@ -80,7 +80,8 @@ class FBAuth(object):
                              "You can close this window now.")
 
 def print_title(num, title):
-    print "\t{} - {}".format(num, title)
+    # unicode() prevents ASCII/uncode conflicts
+    print unicode("\t{} - {}").format(num, title)
 
 def print_param(name, key, data):
     event_format = "\t\t{}: {}"
@@ -126,17 +127,15 @@ class FBMenu(object):
         event_num = 0
         events = self.auth.graph.request('/me/events/')['data']
         for event in events:
-            owner_id = self.auth.graph.request('/' + event['id'])['owner']['id']
-            if self.auth.id == owner_id:
-                print_title(chr(ord('A') + event_num), event['name'])
-                print_param("Start time", 'start_time', event)
-                print_param("End time", 'end_time', event)
-                print_param("Timezone", 'timezone', event)
-                print_param("Location", 'location', event)
+            print_title(chr(ord('A') + event_num), event['name'])
+            print_param("Start time", 'start_time', event)
+            print_param("End time", 'end_time', event)
+            print_param("Timezone", 'timezone', event)
+            print_param("Location", 'location', event)
 
-                # Build event history
-                self.event_list.append(event['id'])
-                event_num += 1
+            # Build event history
+            self.event_list.append(event['id'])
+            event_num += 1
 
     def show_lists(self):
         print "Displaying your friend lists and networks..."
@@ -145,11 +144,13 @@ class FBMenu(object):
         self.friendlist_list = []
         friendlist_num = 0
         friendlists = self.auth.graph.request('/me/friendlists/')['data']
-        for friendlist in friendlists:
-            print_title(friendlist_num, friendlist['name'])
+        for f in friendlists:
+            friend_count = len(self.auth.graph.request('{}/{}'.format(
+                    f['id'], 'members'))['data'])
+            print_title(friendlist_num, f['name'] + " - " + str(friend_count))
 
             # Build friendlist history
-            self.friendlist_list.append(friendlist['id'])
+            self.friendlist_list.append(f['id'])
             friendlist_num += 1
 
     def show_list_friends(self, list_id):
@@ -159,12 +160,14 @@ class FBMenu(object):
         friends = self.auth.graph.request('/{}/{}/'.format(
                 self.friendlist_list[list_id], 'members'))['data']
         for friend in friends:
-            print friend['name']
+            print "\t" + friend['name']
 
     def invite(self, event_index, list_index):
         """
         Invites all the people in a certain list to a certain event
         """
+        # TODO: Currently will throw exception and fail if user doesn't
+        # have invite permissions
         friendlist_id = self.friendlist_list[list_index]
         event_id = self.event_list[event_index]
 
@@ -198,6 +201,7 @@ class FBMenu(object):
             show lists <list-num>
             show all
             invite <event-letter> <list-num>
+            exit
         """
 
     def select(self, command, args):
@@ -209,7 +213,7 @@ class FBMenu(object):
         elif command == "show" and args[0] == "lists" and len(args) == 1:
             self.show_lists()
         elif (command == "show" and args[0] == "lists" and is_number(args[1]) \
-                and int(args[1]) < len(friendlist_list)):
+                and int(args[1]) < len(self.friendlist_list)):
             self.show_list_friends(int(args[1]))
         elif (command == "invite" and is_char(args[0]) and \
                 ord(args[0]) - ord('A') < len(self.event_list) and \
@@ -220,18 +224,23 @@ class FBMenu(object):
             self.show_lists()
         elif command == "help":
             self.help()
+        elif command == "exit":
+            sys.exit()
         else:
             print "Invalid command"
 
 if __name__ == "__main__":
     menu = FBMenu()
 
-    print """Welcome to Facebook Evenite!
-        Type help for instructions
+    print """
+    Welcome to Facebook Evenite!
+    Type help for instructions
     """
-
-    while 1:
-        params = raw_input(menu.PROMPT).split(' ')
-        command = params[0]
-        args = params[1:]
-        menu.select(command, args)
+    try:
+        while 1:
+            params = raw_input(menu.PROMPT).split(' ')
+            command = params[0]
+            args = params[1:]
+            menu.select(command, args)
+    except KeyboardInterrupt:
+        print
